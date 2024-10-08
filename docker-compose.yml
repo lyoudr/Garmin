@@ -1,0 +1,113 @@
+version: '3.8'
+
+services:
+  # kafka
+  kafka:
+    image: docker.io/bitnami/kafka:3.8
+    container_name: kafka 
+    ports:
+      - "9092:9092"
+      - "9100:9100"
+    networks:
+      - kafka-network 
+    environment:
+      # KRaft settings
+      - KAFKA_CFG_NODE_ID=0
+      - KAFKA_CFG_PROCESS_ROLES=controller,broker
+      - KAFKA_CFG_CONTROLLER_QUORUM_VOTERS=0@kafka:9093
+      # listeners
+      - KAFKA_CFG_CLUSTER_ID=ann-kafka-cluster
+      - KAFKA_CFG_LISTENERS=PLAINTEXT://:9092,CONTROLLER://:9093
+      - KAFKA_CFG_ADVERTISED_LISTENERS=PLAINTEXT://:9092
+      - KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP=CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT
+      - KAFKA_CFG_CONTROLLER_LISTENER_NAMES=CONTROLLER
+      - KAFKA_CFG_INTER_BROKER_LISTENER_NAME=PLAINTEXT
+    expose:
+      - "9092"
+    healthcheck:
+      test: ["CMD", "bash", "-c", "kafka-topics.sh --bootstrap-server localhost:9092 --list | grep -q '^$'"]  # Check if Kafka is reachable
+      interval: 10s   # Wait 10 seconds between checks
+      timeout: 5s     # Timeout for each check
+      retries: 5      # Retry 5 times before considering the container unhealthy
+  
+  # cassandra
+  cassandra:
+    image: cassandra:5.0.1
+    container_name: cassandra
+    networks:
+      - kafka-network
+    ports:
+      - "9042:9042"  # Expose the default Cassandra port
+    volumes:
+      - cassandra-data:/var/lib/cassandra  # Persist data
+    environment:
+      - CASSANDRA_CLUSTER_NAME=Test Cluster
+      - CASSANDRA_AUTHENTICATOR=PasswordAuthenticator  # Enable password authentication
+      - CASSANDRA_USER=cassandra  # Default user
+      - CASSANDRA_PASSWORD=cassandra  # Default password
+    healthcheck:
+      test: ["CMD", "cqlsh", "-u cassandra", "-p cassandra" ,"-e describe keyspaces"]
+      interval: 15s
+      timeout: 10s
+      retries: 10
+  
+  # producer
+  producer:
+    build:
+      context: ./producer # Path to Producer Dockerfile
+      dockerfile: Dockerfile
+    container_name: producer
+    depends_on:
+      kafka:
+        condition: service_healthy 
+    networks:
+      - kafka-network
+    environment:
+      - KAFKA_BROKER_URL=kafka:9092
+      - TOPIC=test-topic
+    ports:
+      - "8000:80"
+    restart: always
+    
+  # consumer
+  consumer:
+    build:
+      context: ./consumer 
+      dockerfile: Dockerfile 
+    container_name: consumer
+    depends_on:
+      kafka:
+        condition: service_healthy
+      cassandra:
+        condition: service_healthy  # Wait until Cassandra is healthy
+    networks:
+      - kafka-network
+    environment:
+      - KAFKA_BROKER_URL=kafka:9092
+      - CASSANDRA_CONTACT_POINTS=cassandra
+      - CASSANDRA_PORT=9042
+      - CASSANDRA_KEYSPACE=ann
+    ports:
+      - "8081:80"
+    restart: always
+  
+  # prometheus
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: prometheus
+    networks:
+      - kafka-network
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+
+
+networks:
+  kafka-network:
+    driver: bridge
+
+volumes:
+  cassandra-data:
