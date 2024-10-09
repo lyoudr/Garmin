@@ -75,7 +75,7 @@ payload
 ```
 {
     "topic": "test-topic",
-    "message": "/workspace/app/billing_report.csv"
+    "message": "/workspace/app/statics/billing_report_1.csv" # or "/workspace/app/statics/billing_report_2.csv"
 }
 ```
 
