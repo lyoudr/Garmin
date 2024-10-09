@@ -2,7 +2,7 @@
 
 ## Project Overview
 
-In my project flow, the producer service continuously sends billing file paths (raw data) to a Kafka topic, while the consumer service subscribes to this topic. Upon receiving a message, the consumer service executes an Apache Beam data pipeline that implements a map-reduce pattern, processing the data and writing the results to a Cassandra database. Additionally, I utilize Prometheus to collect metrics from the containers, enabling me to monitor request volumes, CPU usage, and memory utilization effectively.
+In my project flow, the producer service continuously sends billing file paths (raw data) to a Kafka topic, while the consumer service subscribes to this topic. Upon receiving a message, the consumer service continously executes an Apache Beam data pipeline that implements a map-reduce pattern, processing the data and writing the results to a Cassandra database. It is a streaming event processing system. Additionally, I utilize Prometheus to collect metrics from the containers, enabling me to monitor request volumes, CPU usage, and memory utilization effectively.
 
 ## Tools Used
 - **Apache Kafka**: For message streaming.

@@ -13,7 +13,7 @@ app.include_router(router)
 
 # Kafka
 admin_client = AdminClient({
-    'bootstrap.servers': f'{BOOTSTRAP_SERVER}'
+    'bootstrap.servers': BOOTSTRAP_SERVER
 })
 topic_list = [NewTopic(TOPIC, 1, 1)]
 admin_client.create_topics(topic_list)

@@ -12,7 +12,7 @@ class BillReportModel(BaseModel):
 
 
 def count_fee_and_save_to_db(element) -> None:
-    from .main import app
+    from ..main import app
     company, total_cost = element
     tech_fee = Decimal(total_cost) * Decimal('0.05')  # Applying 5% Serving Fee
     discounted_cost = Decimal(total_cost) * Decimal('0.98')  # Appying 98% Discount

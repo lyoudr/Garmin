@@ -23,7 +23,7 @@ def produce(kafka_msg: KafkaMessage):
     try:
         producer.produce(
             kafka_msg.topic,
-            kafka_msg.message.encode('utf-8'),
+            kafka_msg.msg.encode('utf-8'),
             callback=delivery_report
         )
         producer.flush() # Force delivery of the message.
